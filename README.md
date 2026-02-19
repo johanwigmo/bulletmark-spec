@@ -61,7 +61,7 @@ BulletMark is a specification for organizing tasks, evens, and notes using enhan
 
 ## Documentation
 
-See [SPEC.md](./SPEC.md) for the complete specification including: 
+See [Spec.md](./Spec.md) for the complete specification including: 
 - Detailed syntax rules
 - Parsing guidelines
 - Complete examples
@@ -75,7 +75,7 @@ BulletMark implementations across different platforms:
 
 ## Examples
 
-Check the [examples/](./examples/) directory for
+Check the [Examples/](./Examples/) directory for
 - Daily planning workflows
 - Project tracking templates
 - Meeting notes formats
@@ -83,7 +83,7 @@ Check the [examples/](./examples/) directory for
 
 ## Testing 
 
-The [test/](./tests/) directory contains shared test fixtures in markdown format that implementations can use to verify compliance with the specification. 
+The [Test/](./Tests/) directory contains shared test fixtures in markdown format that implementations can use to verify compliance with the specification. 
 
 ## Contributing
 
@@ -110,4 +110,4 @@ This specification is released into the public domain. See [LICENSE](./LICENSE) 
 
 Current version: **1.0.0**
 
-See [SPEC.md](./SPEC.md) for version history and changelog.
+See [Spec.md](./Spec.md) for version history and changelog.
