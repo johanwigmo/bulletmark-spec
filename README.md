@@ -2,22 +2,23 @@
 
 **A lightweight, human-readable markup format for tasks and notes.**
 
-BulletMark is a personal specification I use for managing my tasks and notes in plain text. It extends standard markdown with intuitive syntax for task management while remainingcompletely readable in any text editor. If you find it useful too, that's great!
+BulletMark is a personal specification I use for managing my tasks and notes in plain text. It extends standard markdown with intuitive syntax for task management while remaining completely readable in any text editor. If you find it useful too, that's great!
 
-## What is Bullet Mark?
+## What is BulletMark?
 
-BulletMark is a specification for organizing tasks, evens, and notes using enhanced markdown syntax. It combines the simplicity of bullet journaling with the power of structured markup.
+BulletMark is a specification for organizing tasks, events, and notes using enhanced markdown syntax. It combines the simplicity of bullet journaling with the power of structured markup.
 
 ```markdown
 # 2026-02-04 Wednesday
 
 - [o] 09:00: *Team standup*
-- [ ] (A) Review pull requests +CodeReview
+- [ ] Review pull requests +CodeReview
     due: 2026-02-04
     - https://github.com/org/repo/pull/123
 - [/] Write documentation +Docs
     - Making good progress
-- [>] Get feedback from design team @Design
+- [>] Prepare release notes +Release
+    - Moved to 2026-02-05
 - [x] 2026-02-04 Fix login bug
 
 = Productive morning!
@@ -26,11 +27,10 @@ BulletMark is a specification for organizing tasks, evens, and notes using enhan
 ## Key Features
 
 - **Multiple Item Types**: Tasks, events, notes, and reflections
-- **Organization**: Projects (+Tag) and context (@Tag)
-- **Dates**: Due dates, completion dates, and event scheduling
-- **Priority Levels**: (A), (B), ..., (Z) for task prioritization
+- **Organization**: Projects (+Project) and context (@Tag)
+- **Dates**: Due dates, defer dates, completion dates, and event scheduling
 - **Hierarchical**: Nested items with four-space indentation
-- **Plan Text**: Works with any text editor
+- **Plain Text**: Works with any text editor
 - **Markdown Compatible**: Valid markdown that renders everywhere
 
 ## Quick Start
@@ -41,8 +41,8 @@ BulletMark is a specification for organizing tasks, evens, and notes using enhan
 - [ ] Incomplete task
 - [/] In progress
 - [x] Completed task
-- [<] Mitigated task, move to backlog
-- [>] Delegated/waiting task, move to next day
+- [>] Migrated task, pushed to a later date
+- [<] Backlogged task, returned to a backlog
 - [o] Event or time-block
 - [-] Cancelled
 
@@ -50,18 +50,20 @@ BulletMark is a specification for organizing tasks, evens, and notes using enhan
 = Reflection/feeling
 ```
 
-### Inline Markers
+### Dates and Metadata
 
 ```markdown
 - [ ] Task with due date
     due: 2026-02-10
+- [ ] Task that becomes actionable later
+    defer: 2026-02-12
 - [x] 2026-02-05 Completed task, with completion date
-- [o] 20026-02-06 14:00: *Meeting*
+- [o] 2026-02-06 14:00: *Meeting*
 ```
 
 ## Documentation
 
-See [Spec.md](./Spec.md) for the complete specification including: 
+See [Spec.md](./Spec.md) for the complete specification including:
 - Detailed syntax rules
 - Parsing guidelines
 - Complete examples
@@ -81,13 +83,13 @@ Check the [Examples/](./Examples/) directory for
 - Meeting notes formats
 - Common use cases
 
-## Testing 
+## Testing
 
-The [Test/](./Tests/) directory contains shared test fixtures in markdown format that implementations can use to verify compliance with the specification. 
+The [Tests/](./Tests/) directory contains shared test fixtures in markdown format that implementations can use to verify compliance with the specification.
 
 ## Contributing
 
-BulletMark is a personal spec that evolves based on my workflow needs. That said, I welcome: 
+BulletMark is a personal spec that evolves based on my workflow needs. That said, I welcome:
 - Bug reports and clarifications
 - Test fixtures and examples
 - Non-breaking additions that fit naturally
@@ -106,8 +108,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details. Breaking changes are unlik
 
 This specification is released into the public domain. See [LICENSE](./LICENSE) for details.
 
-## Version 
+## Version
 
-Current version: **1.0.0**
+Current version: **2.0.0**
 
 See [Spec.md](./Spec.md) for version history and changelog.

@@ -1,9 +1,9 @@
 # BulletMark Specification
 
-**Version:** 1.0.0
-**Last Updated:** 2026-02-19
+**Version:** 2.0.0
+**Last Updated:** 2026-10-22
 
-BulletMark is a lightweight, human-readable markup format for task management and notes. It extends standard markdown with intuitive syntax for tasks, events, and metadata while remaining completely readable as plain text. 
+BulletMark is a lightweight, human-readable markup format for task management and notes. It extends standard markdown with intuitive syntax for tasks, events, and metadata while remaining completely readable as plain text.
 
 ## Design Principles
 
@@ -13,321 +13,203 @@ BulletMark is a lightweight, human-readable markup format for task management an
 4. **Unambiguous**: Clear parsing rules without special cases
 5. **Standard Markdown**: Valid markdown that renders sensibly everywhere
 
-## Core Syntax
-
-### Item Types
-
-BulletMark defines several item types, each with a specific marker: 
+## Item Types
 
 ```
-#Header                                 Standard markdown header
-- [ ] Incomplete task                   Task not yet started
-- [/] In progress                       Task currently being worked on
-- [x] Completed task                    Task finished
-- [<] Mitigated task, moved to backlog  Task deprioritized
-- [>] Delegated task                    Tasked waiting on someone else
-- [o] Event/time block                  Calendar event or time allocation
-- [-] Cancelled task/event              Task/event no longer needed
-- Regular note                          Standard bullet point
-= Reflection/feeling                    Personal reflection or feeling
+#Header                     Standard markdown header
+---                         Section divider (structural, no semantics)
+- [ ] Incomplete task       Task not yet started
+- [/] In progress           Task currently being worked on
+- [x] Completed task        Task finished
+- [-] Cancelled             Task/event no longer needed — marked, never deleted
+- [>] Migrated              Task pushed forward to a later date (log marker)
+- [<] Backlogged            Task returned to a backlog (log marker)
+- [o] Event                 Calendar event or time block
+- Regular note              Standard bullet point
+= Reflection                Personal reflection or feeling
 ```
 
-### Inline Markers
+**States vs. log markers:** `[ ]` `[/]` `[x]` `[-]` are persistent states. `[>]` and `[<]` record a movement decision at a point in time (e.g. in a daily log); the task itself reappears as `[ ]` wherever it lands.
 
-BulletMark supports inline markers for organization and context:
-
-```
-+ProjectName    Project tag (e.g., +AuthRefactor)
-@Tag            Context or tag (e.g., @Home, @Work, @Design)
-(A)             Priority level, A-Z (placed at start of text, after checkbox
-```
-
-**Naming Rules**
-- Project and tag names are case-sensitive
-- Must start with a letter
-- Can contain letters, numbers, and hyphens
-- No spaces (use PascalCase, CamelCase or hyphen-separation)
-
-**Placement Rules**
-- An item's text must not begin with a `+Project` or `@Tag` marker — they must follow actual text content
-- Each item may contain at most one `+Project` marker
-- Multiple `@Tag` markers per item are allowed
-
-**Priority Placement:**
-```
-- [ ] (A) High priority task +Project @Tag
-- [/] (B) Medium priority work in progress
-```
-
-### Dates and Times
-
-#### Due Dates
-
-Due dates use a special `due:` metadata format:
+## Markers
 
 ```
-- [ ] Task description
-    due: 2026-01-25
-- [ ] Task with specific deadline time
-    due: 2026-01-25 14:00
++ProjectName    Project tag (at most one per item)
+@Tag            Context or tag (multiple allowed)
 ```
 
-**Format:** `due: YYYY-MM-DD [HH:MM]`
-**Placement:** On its own indented line below the task
-**Notes:** This is the ONLY `key:value` format in BulletMark. The time component is optional; when omitted the due date applies to the whole day.
+- Names are case-sensitive, start with a letter, and contain only letters, numbers, and hyphens (no spaces)
+- An item's text must not begin with a `+Project` or `@Tag` marker; markers follow actual text content
 
-#### Completion Dates
+## Dates and Times
 
-Completed tasks can include a completion date at the start: 
+Dates use ISO 8601 (`YYYY-MM-DD`), times 24-hour `HH:MM`.
+
+### Completion Dates
+
+Completed tasks carry their completion date at the start:
 
 ```
 - [x] 2026-01-23 Fixed bug in login flow
 ```
 
-**Format:** `- [x] YYYY-MM-DD Task description`
+### Metadata: `due:` and `defer:`
 
-#### Events with Date/Time
-
-Events can include date and/or time:
+Two `key:value` pairs exist, each on its own indented line below the task:
 
 ```
-- [o] 2026-01-23 14:00: Team sync meeting
-- [o] 2026-01-23 All-day event
-- [o] 14:00: Event today
+- [ ] Task with a hard deadline
+    due: 2026-01-25
+- [ ] Task with a deadline time
+    due: 2026-01-25 14:00
+- [ ] Task that becomes actionable later
+    defer: 2026-11-15
 ```
 
-**Format:** `- [o] [YYYY-MM-DD] [HH:MM]: Event description`
-**Note:** Event namne can be emphasized with asterisks for better visibility
+- `due:` — hard deadline; time component optional
+- `defer:` — task is not actionable before this date; date only
 
-### Indentation and Hierrchy
-
-**Rule:** Every level of indentation consists of exactly **four spaces** (not tabs).
-
-#### Child Items
-
-Child items provide additional context, notes, or sub-tasks:
+These are the ONLY `key:value` formats in BulletMark. All other `key:value` lines are prohibited:
 
 ```
-- [ ] Main task +Project
-    - This is a note about the task
-    - https://example.com/reference
-    - Another detail to remember
-    - [ ] Subtask one
-    - [ ] Subtask two
-        - Note on subtask two
-```
-
-#### Prohibited Formats
-
-Do NOT use `key:value` formats other than `due:`:
-
-```
-# WRONG: 
+# WRONG:
 - [ ] Task
     note: Some information
-    url: https://example
 
 # CORRECT:
 - [ ] Task
     - Some information
-    - https://example.com
 ```
 
-## Complete Examples
+### Events
 
-### Daily Planning
+```
+- [o] 09:00: *Team sync*
+- [o] 2026-01-25 14:00: *Conference talk*
+- [o] 2026-02-01 All-day event
+```
+
+Event names are emphasized with asterisks. Date and time are both optional: an optional leading date, an optional `HH:MM:` time, then the name. When the date is omitted it's implicit from context (e.g. the enclosing daily note or date header); time-only is the common form in daily logs.
+
+A cancelled event flips its marker to `[-]`, same as tasks:
+
+```
+- [-] 09:15: *Cancelled meeting*
+```
+
+## Indentation and Hierarchy
+
+Every level of indentation is exactly **four spaces** (not tabs). Child items provide context, notes, or sub-tasks:
+
+```
+- [ ] Main task +Project
+    - A note about the task
+    - https://example.com/reference
+    - [ ] Subtask one
+        - Note on the subtask
+```
+
+## Complete Example
 
 ```markdown
 # 2026-02-05 Wednesday
 
-## Morning
+= Feeling good about progress this week
 
-- [o] 09:00: Standup meeting @Work
-- [ ] (A) Review critical PRs +CodeReview
-    due: 2026-02-05
+- [o] 09:00: *Standup*
+- [-] 09:30: *Cancelled sync*
+- [x] 2026-02-05 Morning workout
+- [/] Write API documentation +Docs @Work
+    - Endpoints section done
+    - Authentication chapter remaining
+- [ ] Review PRs +CodeReview
+    due: 2026-02-06
     - https://github.com/org/repo/pull/123
-    - https://github.com/org/repo/pull/124
-- [/] Write API documentation +Docs
-    - Completed endpoints section
-    - Still need authentication chapter
-
-## Afternoon
-
-- [o] 14:00: Design review with Sarah @Design
-- [ ] (B) Refactor authentication flow +AuthRefactor
-    - Consider OAuth2 integration
-    - Check backwards compatibility
-- [>] Get legal approval for TOS changes @Legal
-    - Sent to legal team on 2026-02-03
-
-## Personal
-
-- [ ] Schedule dentist appointment @Personal
-- [ ] Buy groceries @Errands
-    - Milk
-    - Eggs
-    - Coffee
-
-= Feeling good about progress on the documentation today
-```
-
-### Project Tracking
-
-```markdown
-# Project: Website Redesign +WebsiteRedesign
-
-## Sprint 3
-
-- [x] 2026-02-01 Set up design system +Frontend
-- [x] 2026-02-03 Implement navigation component +Frontend
-- [/] Build responsive layouts +Frontend
-    - Desktop done
-    - Working on tablet breakpoints
-    - Mobile pending
-- [ ] (A) Add accessibility features +Frontend @A11y
-    due: 2026-02-07
-    - ARIA labels
-    - Keyboard navigation
-    - Screen reader testing
+- [ ] Re-verify staging deploy
+    defer: 2026-02-09
+- [>] Call Sebbe
 - [<] Optimize image loading +Performance
-    - Lower priority than accessibility
-    - Moving to next sprint
-
-## Blocked/Waiting
-
-- [>] Get brand guidelines from marketing @Marketing
-    - Requested 2026-01-28
-    - Follow up needed
+    - Lower priority than accessibility, back to backlog
 - [-] Implement carousel component
     - Decided against after UX review
-```
-
-### Mixed Content
-
-```markdown
-# 2026-02-05 Wednesday
-
-- [x] 2026-02-05 Morning workout @Personal
-- [o] 10:00: Client call +ProjectX @Work
-- [ ] (A) Finish quarterly report +Reports
-    due: 2026-02-06
-    - Gather metrics from analytics
-    - https://dashboard.example.com
-    - Review with manager before submitting
-- [/] Learn Rust +Learning
-    - Completed chapters 1-3
-    - Working through ownership concepts
-    - https://doc.rust-lang.org/book/
-
-= Realized I need to delegate more tasks to focus on high-priority items
-
-- Meeting notes from client call
-    - Client happy with progress
-    - Requested two new features
-    - Budget discussion next week
 ```
 
 ## Parsing Rules
 
 ### Line Types
 
-A parser should recognize lines as: 
+1. **Headers:** lines starting with one or more `#`
+2. **Section rules:** lines of three or more hyphens (`---`)
+3. **Tasks:** lines starting with `- [X]` where X is one of ` `, `/`, `x`, `-`, `>`, `<`, `o`
+4. **Notes:** lines starting with `- ` (without checkbox)
+5. **Reflections:** lines starting with `= `
+6. **Metadata:** indented lines matching `due: YYYY-MM-DD [HH:MM]` or `defer: YYYY-MM-DD`
+7. **Other markdown:** everything else (opaque — see below)
 
-1. **Headers:** Lines starting with one or more `#` characters
-2. **Task itemsa:** Lines starting with `- [X]` where X is one of : ` `, `/`, `x`, `<`, `>`, `o`, `-`
-3. **Regular bullets:** Lines starting with `- ` (without checkox)
-4. **Reflections:** Lines starting with `= `
-5. **Due dates:** Indented lines matching pattern `due: YYYY-MM-DD [HH:MM]`
-6. **Regular markdown:** Everything else
+### Other Markdown
 
-### Date Parsing
+Beyond the line types above, documents may freely contain any other markdown — blockquotes (`>`), tables, code blocks, footnotes. Parsers treat it as opaque content: preserved verbatim, never interpreted. Rendering or understanding the rest of markdown is an implementation choice, not a requirement.
 
-- **ISO 8601 format:** `YYYY-MM-DD`
-- **Time format:** `HH:MM` in 24-hour format
-- Times without dates implicityly refer to the current or most recent date header
+Long-form content is out of scope: BulletMark is the rapid-logging layer; extended writing lives in separate documents, linked where needed.
 
 ### Marker Extraction
 
-- **Projects:** Extract the first token matching `+[A-Za-z][A-Za-z0-9-]*`; only one +Project is valid per item
-- **Tags:** Extract all tokens matching `@[A-Za-z][A-Za-z0-9-]*`; multiple tags per item are allowed
-- **Priority:** Extract `([A-Z])` at the start of task text (after checkbox)
-- **Item text** must not begin with a `+Project` or `@Tag` token; markers appearing as the very first token of the text content are invalid
+- **Projects:** first token matching `\+[A-Za-z][A-Za-z0-9-]*`; at most one per item
+- **Tags:** all tokens matching `@[A-Za-z][A-Za-z0-9-]*`
+- Item text must not begin with a `+Project` or `@Tag` token
 
 ### Indentation
 
-- Count leading spaces
-- Must be divisible by 4 to be valid indentation
-- Item at level N is child of the nearest preceding item T level N-1
+- Count leading spaces; must be divisible by 4
+- An item at level N is a child of the nearest preceding item at level N-1
 
-## Implementation Notes
+## Write-back and Round-tripping
 
-### Recommended Features
+When an implementation writes BulletMark back to a file:
 
-While not part of the core spec, implementations may want to provide: 
+**Preserve what you don't own**
+- Unrecognized lines (e.g. `-missing-space`) are kept verbatim — never silently discarded
+- Empty lines are preserved in their relative positions
+- Only lines the implementation created or explicitly edited may change
 
-- Task filtering by project, tag, status, or priority
-- Due date calculations and overdue warnings
-- Task statistics and completion rates
-- Export to other formats (JSON, CSV)
+**Insertion position**
 
-### Rendering Considerations
-
-BulletMark should render reasonably in any markdown viewer: 
-
-- Task checkoxes rendre as standard markdown checkboxes
-- In-progress `[/]` renders as `[/]` (clear enough)
-- Delegated `[>]` and backlog `[<]` render as directional indicators
-- Event marker `[o]` suggests a circle/dot (calendar event)
-- Cancelled marker `[-]` shows strikethrough intent
-- Reflections with `k` appear as emphasized lines
-
-### Write-back and Round-tripping
-
-When an implementation writes BulletMark back to a file (after parsing, editing, or inserting), it should follow these guidelines.
-
-#### Preserve What You Don't Own
-
-- **Unrecognized lines** (e.g. `-missing-space` or unknown syntax) must be kept verbatim — never silently discarded
-- **Empty lines** must be preserved in their relative positions; they carry no semantic meaning but may be intentional for readability
-- **Only lines the implementation created or explicitly edited** should change; everything else stays exactly as found
-
-#### Insertion Position
-
-When inserting a new item between two existing items, place the new line immediately before the first line of the next recognized item. Unrecognized lines and empty lines between those two items remain where they are.
+Place a new item immediately before the first line of the next recognized item. Unrecognized and empty lines between items stay where they are:
 
 ```
 - This is valid
-                       ← empty line (stays)
--this is unrecognized  ← preserved verbatim (stays)
-- [ ] New item         ← inserted here, just before the next recognized item
+                        ← empty line (stays)
+-this is unrecognized   ← preserved verbatim (stays)
+- [ ] New item          ← inserted here
 - This is also valid
 ```
 
-#### New Items Must Be Valid
+**New items must be valid**
 
-Tooling must always write syntactically valid BulletMark when creating new items. Implementations should never produce lines that would be classified as unrecognized by a parser.
+Tooling must never produce lines a parser would classify as unrecognized.
 
-### Extension Points
+**No anchor**
 
-Implementations may exted BulletMark with:
-
-- Additional item types (with different markers)
-- Custom metadata fields (with clear namespacing)
-- Integration with external tools ocalendars, issue trackres)
-
-**Guideline:** Extensions should degrade gracefully in basic markdown viewers.
+If there is no next recognized item, new items are appended at the end of the file. Implementations that hide unrecognized lines in their UI should still make clear those lines exist — they are part of the document.
 
 ## Version History
 
-BulletMark uses semantic versioning with three tiers:
+BulletMark uses semantic versioning:
 
-- **X.0.0 — Major:** Breaking changes to parsing or syntax
-- **x.X.0 — Minor:** Additions or bug fixes that should not break existing parsers
-- **x.x.X — Patch:** Clarifications only; no change to actual parsing behaviour
+- **X.0.0 — Major:** breaking changes to parsing or syntax
+- **x.X.0 — Minor:** additions that don't break existing parsers
+- **x.x.X — Patch:** clarifications only
+
+### 2.0.0 (2026-10-22)
+
+- Removed `(A)` priority markers
+- Redefined `[>]` as migrated and `[<]` as backlogged (previously delegated/mitigated); clarified both as log markers, not persistent states
+- Added `defer:` metadata; `due:` and `defer:` are now the only two `key:value` formats
+- Events: emphasized names; date and time both optional (time-only is the common daily-log form); cancelled events use `[-]` like tasks
+- Added `---` section rules as a recognized structural line type
+- Added "Other Markdown" parsing note: non-BulletMark markdown is allowed in documents but opaque to parsers; long-form journaling ruled out of scope
+- Restructured and compressed
 
 ### 1.0.0 (2026-02-19)
+
 - Initial specification
-- Core item types and markers
-- Date and time formats
-- Indentation rules
-- Examples and parsing guidelines

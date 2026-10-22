@@ -9,8 +9,8 @@ This file contains test cases that implementations should handle correctly.
 - [ ] Incomplete task
 - [/] In progress task
 - [x] Completed task
-- [<] Backlog task
-- [>] Delegated task
+- [<] Backlogged task
+- [>] Migrated task
 - [o] Event
 - [-] Cancelled task
 -     Regular note
@@ -29,15 +29,11 @@ This file contains test cases that implementations should handle correctly.
 ```markdown
 - [ ] Task with project +ProjectName and tag @Context
 - [ ] Multiple tags @Tag1 @Tag2 @Tag3
-- [ ] (A) Priority task +Project
-- [ ] (B) Medium priority with @Tag
 ```
 
 ### Expected Parsing
 - Item 1: projects=['ProjectName'], tags=['Context']
 - Item 2: tags=['Tag1', 'Tag2', 'Tag3'] (multiple @Tags are valid)
-- Item 3: priority='A', projects=['Project']
-- Item 4: priority='B', tags=['Tag']
 
 ### Invalid Examples (must be rejected or flagged)
 ```markdown
@@ -85,15 +81,17 @@ This file contains test cases that implementations should handle correctly.
 
 ### Input
 ```markdown
-- [o] 2026-02-10 14:00: Team meeting
+- [o] 2026-02-10 14:00: *Team meeting*
 - [o] 2026-02-11 All-day event
-- [o] 15:30: Meeting today
+- [o] 15:30: *Meeting today*
+- [-] 16:00: *Cancelled call*
 ```
 
 ### Expected Parsing
 - Item 1: type='event', date='2026-02-10', time='14:00', text='Team meeting'
 - Item 2: type='event', date='2026-02-11', text='All-day event'
-- Item 3: type='event', time='15:30', text='Meeting today'
+- Item 3: type='event', time='15:30', text='Meeting today' (date implicit from context)
+- Item 4: status='cancelled', time='16:00', text='Cancelled call' (cancelled events use [-])
 
 ## Test Case 6: Hierarchical Items
 
@@ -144,8 +142,8 @@ This file contains test cases that implementations should handle correctly.
 # Daily Log
 
 - [x] 2026-02-05 Morning task +Work
-- [o] 14:00: Afternoon meeting @Team
-- [ ] (A) Evening task +Personal
+- [o] 14:00: *Afternoon meeting* @Team
+- [ ] Evening task +Personal
     due: 2026-02-06
     - Note about task
     - https://example.com
@@ -159,7 +157,7 @@ This file contains test cases that implementations should handle correctly.
 ### Expected Parsing
 - 1 completed task with date and project
 - 1 event with time and tag
-- 1 incomplete task with priority, project, due date, and 2 child notes
+- 1 incomplete task with project, due date, and 2 child notes
 - 1 in-progress task with project and 2 child notes
 - 1 reflection
 
@@ -180,18 +178,12 @@ Parsers should handle invalid indentation gracefully (either ignore or normalize
 ### Input
 ```markdown
 - [ ] Task with +Project123 and @Tag-Name
-- [ ] Task with (A) priority at start
-- [ ] Task with priority at end (B)
-- [ ] Task with multiple (A) (B) priorities
 - [ ] due: 2026-02-05
 ```
 
 ### Expected Parsing
 - Item 1: projects=['Project123'], tags=['Tag-Name'] (alphanumeric + hyphens)
-- Item 2: priority='A' (at start after checkbox)
-- Item 3: priority=None (not at start)
-- Item 4: priority='A' (first one wins)
-- Item 5: Should handle gracefully (due date not indented)
+- Item 2: no due date — `due:` is only metadata on its own indented line; inline it is plain text
 
 ## Test Case 11: Unicode and Special Characters
 
@@ -227,6 +219,8 @@ Empty lines between items should be allowed and ignored
     due: 2026-13-45
 - [ ] Task with invalid time
     due: 2026-02-15 25:99
+- [ ] Task with invalid defer date
+    defer: 2026-02-30
 - [x] 2026-99-99 Invalid completion date
 - [o] 2026-02-30 25:00: Invalid event
 ```
@@ -278,20 +272,59 @@ Parsers should handle invalid dates and times gracefully (reject or flag as inva
 - Item 1: invalid — item text begins with a +Project marker
 - Item 2: invalid — item text begins with a @Tag marker
 
-## Test Case 16: Priority Parsing
+## Test Case 16: Defer Dates
 
 ### Input
 ```markdown
-- [ ] (A) Valid priority at start
-- [ ] Text (A) priority in middle
-- [ ] (X) Invalid priority letter
-- [ ](A) No space after checkbox
-- [ ] (A) (B) Multiple priorities
+- [ ] Task that becomes actionable later
+    defer: 2026-11-15
+- [ ] Task with both dates
+    defer: 2026-02-10
+    due: 2026-02-20
+- [ ] Task with deferred time
+    defer: 2026-02-10 09:00
 ```
 
 ### Expected Parsing
-- Item 1: priority='A'
-- Item 2: priority=None (not at start)
-- Item 3: priority=None (invalid letter)
-- Item 4: priority=None or 'A' (implementation dependent)
-- Item 5: priority='A' (first one wins)
+- Item 1: defer_date='2026-11-15'
+- Item 2: defer_date='2026-02-10', due_date='2026-02-20'
+- Item 3: invalid — `defer:` takes a date only, no time component
+
+## Test Case 17: Section Rules
+
+### Input
+```markdown
+# 2026-02-05 Wednesday
+
+- [ ] Morning task
+
+---
+
+- [ ] Afternoon task
+```
+
+### Expected Parsing
+- 1 header, 2 tasks, 1 section rule
+- Section rules (`---`) are structural only — parsers must not attach semantics or hierarchy to them
+
+## Test Case 18: Other Markdown
+
+### Input
+```markdown
+# Notes
+
+- [ ] Task one
+
+> A blockquote worth keeping
+
+| Col A | Col B |
+|-------|-------|
+| 1     | 2     |
+
+- [ ] Task two
+```
+
+### Expected Parsing
+- 2 tasks and 1 header parse normally
+- Blockquotes, tables, code blocks and other non-BulletMark markdown are opaque: preserved verbatim, never interpreted
+- Opaque content does not affect item parsing or hierarchy
