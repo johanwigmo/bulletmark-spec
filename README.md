@@ -73,7 +73,7 @@ See [Spec.md](./Spec.md) for the complete specification including:
 
 BulletMark implementations across different platforms:
 
-- Yet to come
+- [bulletmark.nvim](https://github.com/johanwigmo/bulletmark.nvim) — Neovim plugin and reference implementation. Syntax highlighting, state cycling, vault-wide search, and completion; conformance-tested against this spec's fixture suite.
 
 ## Examples
 
